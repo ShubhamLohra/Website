@@ -107,7 +107,9 @@ const Farmer = new mongoose.model("Farmer", farmerSchema);
 
 app.get("/", function (req, res) {
   if (req.isAuthenticated()) {
-    res.render("page3");
+    console.log(req.user.username);
+    const username = req.user.username;
+    res.render("page3",{username});
   }
   else {
     res.render("page1");
@@ -128,27 +130,44 @@ app.listen(process.env.port || 3000, function (req, res) {
 });
 
 app.post("/register", function (req, res) {
-  const newUser = new User({
-    name: req.body.name,
+
+  User.register({
+    username: req.body.name, 
     phone: req.body.number,
     adhar: req.body.adhar,
     address: req.body.adress,
     email: req.body.username,
-    password: req.body.password
-  });
-
-  newUser.save(function (err) {
-    User.register({ username: req.body.name }, req.body.password, function (err, user) {
-      if (err) {
-        console.log(err);
-        res.redirect("/register");
-      } else {
-        passport.authenticate("local")(req, res, function () {
+  }, req.body.password, function (err, user) {
+    if (err) {
+      console.log(err);
+      console.log(user);
+      res.redirect("/register");
+    } else {
+      console.log(user);
+      const authenticate = User.authenticate();
+      authenticate("username", "password", function (err, result) {
+        if (err) {
+          res.redirect("/register");
+        }
+        else {
           res.redirect("/login");
-        });
-      }
-    });
+        }
+      })
+      //   passport.authenticate("local")(req, res, function () {
+      //     res.redirect("/login");
+
+      //   });
+    }
   });
+  // const newUser = new User({
+  //   username: req.body.name,
+  //   phone: req.body.number,
+  //   adhar: req.body.adhar,
+  //   address: req.body.adress,
+  //   email: req.body.username,
+  //   password: req.body.password
+  // });
+  // newUser.save();
 });
 
 
@@ -175,21 +194,32 @@ app.post("/post", function (req, res) {
 });
 
 app.post("/login", function (req, res) {
-  
+
   const user = new User({
-     username : req.body.name,
-    password : req.body.password
+    username: req.body.name,
+    password: req.body.password
   })
 
-  req.login(user, function (err) {
+  req.login(user, function (err,user) {
     if (err) {
+      console.log(err);
       res.render("login");
     }
 
     else {
-      passport.authenticate("local")(req, res, function () {
-        res.render("page3", { username });
-      });
+
+      // const username = user.username;
+
+      if (req.isAuthenticated()) {
+        console.log(req.body.name);
+        const username = req.body.name;
+        res.render("page3",{username});
+      }
+      else {
+        console.log(user);
+        res.redirect("/login");
+      }
+
 
     }
   })
@@ -223,6 +253,12 @@ app.get("/profile", function (req, res) {
 
 app.get("/home", function (req, res) {
   res.render("home");
+})
+
+app.get("/logout",function(req,res)
+{
+  req.logout();
+  res.render("page1");
 })
 
 
